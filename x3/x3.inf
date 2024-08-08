@@ -1,0 +1,62 @@
+;
+; x3.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System ; TODO: specify appropriate Class
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318} ; TODO: specify appropriate ClassGuid
+Provider    = %ManufacturerName%
+CatalogFile = x3.cat
+DriverVer   = ; TODO: set DriverVer in stampinf property pages
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+x3.sys = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName% = Standard,NT$ARCH$.10.0...16299 ; %13% support introduced in build 16299
+
+[Standard.NT$ARCH$.10.0...16299]
+%x3.DeviceDesc% = x3_Device, Root\x3 ; TODO: edit hw-id
+
+[x3_Device.NT]
+CopyFiles = File_Copy
+
+[File_Copy]
+x3.sys
+
+;-------------- Service installation
+[x3_Device.NT.Services]
+AddService = x3,%SPSVCINST_ASSOCSERVICE%, x3_Service_Inst
+
+; -------------- x3 driver install sections
+[x3_Service_Inst]
+DisplayName    = %x3.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\x3.sys
+
+[x3_Device.NT.Wdf]
+KmdfService = x3, x3_wdfsect
+
+[x3_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName = "<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+DiskName = "x3 Installation Disk"
+x3.DeviceDesc = "x3 Device"
+x3.SVCDESC = "x3 Service"

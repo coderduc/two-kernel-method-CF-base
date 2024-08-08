@@ -148,7 +148,7 @@ inline SelfDelete* cSelfDelete = new SelfDelete();
 
 int main()
 {
-	cSelfDelete->Dlt();
+	//cSelfDelete->Dlt();
 
 	loadDriver();
 	//InitMoveMouse();

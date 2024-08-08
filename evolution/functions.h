@@ -27,7 +27,7 @@ RECT rect;
 
 //===================================
 int iBoneID = 5;
-float fSmooth = 1, fFov = 32.0f;
+float fSmooth = 1, fFov = 30.0f;
 int AimKey = VK_RBUTTON;
 int TriggerKey = VK_XBUTTON1;
 bool isAimbot = true;

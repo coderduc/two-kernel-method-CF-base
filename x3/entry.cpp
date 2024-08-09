@@ -9,7 +9,7 @@ auto driver_entry() -> const NTSTATUS
     }
     //22H2 - 19045.3930  ==> 0x674E8
     //22H2 - 19045.4717  ==> 0x67538
-    globals::hook_address = win32k + 0x674E8;
+    globals::hook_address = win32k + 0x4A0DC;
     globals::hook_pointer = *reinterpret_cast<uintptr_t*>(globals::hook_address);
     *reinterpret_cast<uintptr_t*>(globals::hook_address) = reinterpret_cast<uintptr_t>(&hooked_function);
 

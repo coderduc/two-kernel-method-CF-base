@@ -1,10 +1,10 @@
 #include "includes.h"
 
-__int64 __fastcall hk_NtCompositionInputThread( void* a1, void* a2, void* a3 )
+__int64 __fastcall hk_NtCompositionSetDropTarget(void* a1, unsigned __int64 a2, __int64 a3)
 {
 	request_data data { 0 };
 	if ( ExGetPreviousMode( ) != UserMode || !pUtils.KernelCopy( &data, a1, sizeof( request_data ) ) || data.unique != request_unique ) {
-		return pUtils.orig_NtCompositionInputThread( a1, a2, a3 );
+		return pUtils.orig_NtCompositionSetDropTarget( a1, a2, a3 );
 	}
 
 	const auto request = reinterpret_cast< request_data* >( a1 );
@@ -191,16 +191,16 @@ NTSTATUS DriverEntry( ) {
 	if ( !win32kb )
 		status = STATUS_UNSUCCESSFUL;
 
-	uint64_t NtCompositionInputThread = ( uint64_t ) RtlFindExportedRoutineByName( ( PVOID ) win32kb, _X( "NtCompositionInputThread" ) );
-	if ( !NtCompositionInputThread )
+	uint64_t NtCompositionSetDropTarget = ( uint64_t ) RtlFindExportedRoutineByName( ( PVOID ) win32kb, _X( "NtCompositionSetDropTarget" ) );
+	if ( !NtCompositionSetDropTarget)
 		status = STATUS_UNSUCCESSFUL;
 
-	uint64_t NtCompositionInputThreadPtr = NtCompositionInputThread + 0xf;
+	uint64_t NtCompositionSetDropTargetPtr = NtCompositionSetDropTarget + 0xf;
 
-	const uintptr_t derefrenced_qword = ( uintptr_t ) NtCompositionInputThreadPtr + *( int* ) ( ( BYTE* ) NtCompositionInputThreadPtr + 3 ) + 7;
+	const uintptr_t derefrenced_qword = ( uintptr_t )NtCompositionSetDropTargetPtr + *( int* ) ( ( BYTE* )NtCompositionSetDropTargetPtr + 3 ) + 7;
 	if ( !derefrenced_qword )
 		status = STATUS_UNSUCCESSFUL;
 
-	*( void** ) &pUtils.orig_NtCompositionInputThread = _InterlockedExchangePointer( ( void** ) derefrenced_qword, ( void* ) hk_NtCompositionInputThread );
+	*( void** ) &pUtils.orig_NtCompositionSetDropTarget = _InterlockedExchangePointer( ( void** ) derefrenced_qword, ( void* ) hk_NtCompositionSetDropTarget);
 	return status;
 }

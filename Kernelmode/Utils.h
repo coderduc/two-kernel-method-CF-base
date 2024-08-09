@@ -23,7 +23,7 @@ class Utils
 public:
 	UINT64 ntoskrnlBase = 0, ntoskrnlSize = 0;
 
-	__int64( __fastcall* orig_NtCompositionSetDropTarget)(void* a1, unsigned __int64 a2, __int64 a3) = nullptr;
+	__int64(__fastcall* orig_NtUserSetGestureConfig)(void* a1);
 	NTSTATUS PatternScan( IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, IN const VOID* base, IN ULONG_PTR size, OUT PVOID* ppFound );
 	NTSTATUS ScanSection( IN PCCHAR section, IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, OUT PVOID* ppFound );
 	BOOLEAN bDataCompare( const BYTE* pData, const BYTE* bMask, const char* szMask );
@@ -46,5 +46,6 @@ public:
 	PVOID get_sys_module_export(LPCWSTR module_name, LPCSTR routine_name);
 	INT FrameRect(HDC hDC, CONST RECT* lprc, HBRUSH hbr, int thickness);
 	bool draw_box(HWND hWnd, int x, int y, int w, int h, int t, int r, int g, int b);
+	NTSTATUS find_process(char* process_name, PEPROCESS* process);
 };
 inline Utils pUtils;

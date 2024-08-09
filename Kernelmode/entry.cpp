@@ -1,10 +1,13 @@
 #include "includes.h"
 
-__int64 __fastcall hk_NtCompositionSetDropTarget(void* a1, unsigned __int64 a2, __int64 a3)
+#define NT_QWORD_SIG _X("\x48\x8B\x05\x00\x00\x00\x00\x48\x85\xC0\x74\x10\x44\x8B\x54\x24\x00\x44\x89\x54\x24\x00\xFF\x15\x00\x00\x00\x00\x48\x83\xC4\x38\xC3\xCC\xCC\xCC\xCC\xCC\xCC\xCC\x48\x83\xEC\x38\x48\x8B\x05\x00\x00\x00\x00\x48\x85\xC0\x74\x10")
+#define NT_QWORD_MASK _X("xxx????xxxxxxxxx?xxxx?xx????xxxxxxxxxxxxxxxxxxx????xxxxx")
+
+__int64 __fastcall hkNtUserSetGestureConfig(void* a1)
 {
 	request_data data { 0 };
 	if ( ExGetPreviousMode( ) != UserMode || !pUtils.KernelCopy( &data, a1, sizeof( request_data ) ) || data.unique != request_unique ) {
-		return pUtils.orig_NtCompositionSetDropTarget( a1, a2, a3 );
+		return pUtils.orig_NtUserSetGestureConfig( a1 );
 	}
 
 	const auto request = reinterpret_cast< request_data* >( a1 );
@@ -173,25 +176,46 @@ __int64 __fastcall hk_NtCompositionSetDropTarget(void* a1, unsigned __int64 a2, 
 
 NTSTATUS DriverEntry( ) {
 
-	NtGdiSelectBrush = (GdiSelectBrush_t)pUtils.get_sys_module_export(L"win32kfull.sys", "NtGdiSelectBrush");
+	NtGdiSelectBrush = (GdiSelectBrush_t)pUtils.get_sys_module_export(_X(L"win32kfull.sys"), _X("NtGdiSelectBrush"));
 	//dbg("[+] SysCall: NtGdiSelectBrush module_export: 0x%p \n", NtGdiSelectBrush);
-	NtGdiCreateSolidBrush = (NtGdiCreateSolidBrush_t)pUtils.get_sys_module_export(L"win32kfull.sys", "NtGdiCreateSolidBrush");
+	NtGdiCreateSolidBrush = (NtGdiCreateSolidBrush_t)pUtils.get_sys_module_export(_X(L"win32kfull.sys"), _X("NtGdiCreateSolidBrush"));
 	//dbg("[+] SysCall: NtGdiCreateSolidBrush module_export: 0x%p \n", NtGdiCreateSolidBrush);
-	NtUserGetDC = (NtUserGetDC_t)pUtils.get_sys_module_export(L"win32kbase.sys", "NtUserGetDC");
+	NtUserGetDC = (NtUserGetDC_t)pUtils.get_sys_module_export(_X(L"win32kbase.sys"), _X("NtUserGetDC"));
 	//dbg("[+] SysCall: NtUserGetDC module_export: 0x%p \n", NtUserGetDC);
-	NtUserReleaseDC = (ReleaseDC_t)pUtils.get_sys_module_export(L"win32kbase.sys", "NtUserReleaseDC");
+	NtUserReleaseDC = (ReleaseDC_t)pUtils.get_sys_module_export(_X(L"win32kbase.sys"), _X("NtUserReleaseDC"));
 	//dbg("[+] SysCall: NtUserReleaseDC module_export: 0x%p \n", NtUserReleaseDC);
-	NtGdiDeleteObjectApp = (DeleteObjectApp_t)pUtils.get_sys_module_export(L"win32kbase.sys", "NtGdiDeleteObjectApp");
+	NtGdiDeleteObjectApp = (DeleteObjectApp_t)pUtils.get_sys_module_export(_X(L"win32kbase.sys"), _X("NtGdiDeleteObjectApp"));
 	//dbg("[+] SysCall: NtGdiDeleteObjectApp module_export: 0x%p \n", NtGdiDeleteObjectApp);
-	NtGdiPatBlt = (PatBlt_t)pUtils.get_sys_module_export(L"win32kfull.sys", "NtGdiPatBlt");
+	NtGdiPatBlt = (PatBlt_t)pUtils.get_sys_module_export(_X(L"win32kfull.sys"), _X("NtGdiPatBlt"));
 	//dbg("[+] SysCall: NtGdiPatBlt module_export: 0x%p \n", NtGdiPatBlt);
 
-	NTSTATUS status = STATUS_SUCCESS;
-	uintptr_t win32kb = pUtils.GetKernelModule( _X( "win32kbase.sys" ) );
-	if ( !win32kb )
-		status = STATUS_UNSUCCESSFUL;
+	uintptr_t win32kb = pUtils.GetKernelModule( _X( "win32k.sys" ) );
+	uintptr_t nt_qword{};
 
-	uint64_t NtCompositionSetDropTarget = ( uint64_t ) RtlFindExportedRoutineByName( ( PVOID ) win32kb, _X( "NtCompositionSetDropTarget" ) );
+	if (win32kb) {
+		nt_qword = pUtils.FindPattern(win32kb, NT_QWORD_SIG, NT_QWORD_MASK);
+	}else {	
+		printf("[-] win32k.sys not found");
+		return STATUS_UNSUCCESSFUL;
+	}
+
+	PEPROCESS process_target{};
+
+	if (pUtils.find_process(_X("explorer.exe"), &process_target) == STATUS_SUCCESS && process_target) {
+		const uintptr_t nt_qword_deref = (uintptr_t)nt_qword + *(int*)((BYTE*)nt_qword + 3) + 7;
+
+		printf("[+] *nt_qword @ 0x%p", nt_qword_deref);
+
+		KeAttachProcess(process_target);
+		*(void**)&pUtils.orig_NtUserSetGestureConfig = _InterlockedExchangePointer((void**)nt_qword_deref, (void*)hkNtUserSetGestureConfig);
+		KeDetachProcess();
+	}
+	else {
+		printf("[-] Can't find explorer.exe");
+		return STATUS_UNSUCCESSFUL;
+	}
+
+	/*uint64_t NtCompositionSetDropTarget = ( uint64_t ) RtlFindExportedRoutineByName( ( PVOID ) win32kb, _X( "NtCompositionSetDropTarget" ) );
 	if ( !NtCompositionSetDropTarget)
 		status = STATUS_UNSUCCESSFUL;
 
@@ -201,6 +225,7 @@ NTSTATUS DriverEntry( ) {
 	if ( !derefrenced_qword )
 		status = STATUS_UNSUCCESSFUL;
 
-	*( void** ) &pUtils.orig_NtCompositionSetDropTarget = _InterlockedExchangePointer( ( void** ) derefrenced_qword, ( void* ) hk_NtCompositionSetDropTarget);
-	return status;
+	*( void** ) &pUtils.orig_NtCompositionSetDropTarget = _InterlockedExchangePointer( ( void** ) derefrenced_qword, ( void* ) hk_NtCompositionSetDropTarget);*/
+	printf("[+] Driver loaded");
+	return STATUS_SUCCESS;
 }

@@ -12,6 +12,7 @@
 #define PATCOPY             (DWORD)0x00F00021
 #define RELATIVE_ADDR(addr, size) ((PVOID)((PBYTE)(addr) + *(PINT)((PBYTE)(addr) + ((size) - (INT)sizeof(INT))) + (size)))
 #define KeMRaiseIrql(a, b) *(b) = KfRaiseIrql(a)
+#define printf(text, ...) (DbgPrintEx(0, 0, _X(text), ##__VA_ARGS__))
 
 typedef HBRUSH(*GdiSelectBrush_t)(_In_ HDC hdc, _In_ HBRUSH  hbr);
 typedef HDC(*NtUserGetDC_t)(HWND hWnd);

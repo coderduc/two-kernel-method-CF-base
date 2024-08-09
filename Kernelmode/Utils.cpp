@@ -431,3 +431,32 @@ bool Utils::draw_box(HWND hWnd, int x, int y, int w, int h, int t, int r, int g,
 	NtUserReleaseDC(hdc);
 	NtGdiDeleteObjectApp(brush);
 }
+
+
+NTSTATUS Utils::find_process(char* process_name, PEPROCESS* process)
+{
+	PEPROCESS sys_process = PsInitialSystemProcess;
+	PEPROCESS curr_entry = sys_process;
+
+	char image_name[15];
+
+	do {
+		RtlCopyMemory((PVOID)(&image_name), (PVOID)((uintptr_t)curr_entry + 0x5a8), sizeof(image_name));
+
+		if (strstr(image_name, process_name)) {
+			DWORD active_threads;
+			RtlCopyMemory((PVOID)&active_threads, (PVOID)((uintptr_t)curr_entry + 0x5f0), sizeof(active_threads));
+			if (active_threads) {
+				*process = curr_entry;
+				return STATUS_SUCCESS;
+			}
+		}
+
+		PLIST_ENTRY list = (PLIST_ENTRY)((uintptr_t)(curr_entry)+0x448);
+		curr_entry = (PEPROCESS)((uintptr_t)list->Flink - 0x448);
+
+	} while (curr_entry != sys_process);
+
+	return STATUS_NOT_FOUND;
+}
+

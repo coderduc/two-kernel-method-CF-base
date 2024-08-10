@@ -23,7 +23,7 @@ class Utils
 public:
 	UINT64 ntoskrnlBase = 0, ntoskrnlSize = 0;
 
-	__int64(__fastcall* orig_NtUserSetGestureConfig)(void* a1);
+	__int64(__fastcall* orig_NtGdiEngPaint)(void* a1);
 	NTSTATUS PatternScan( IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, IN const VOID* base, IN ULONG_PTR size, OUT PVOID* ppFound );
 	NTSTATUS ScanSection( IN PCCHAR section, IN PCUCHAR pattern, IN UCHAR wildcard, IN ULONG_PTR len, OUT PVOID* ppFound );
 	BOOLEAN bDataCompare( const BYTE* pData, const BYTE* bMask, const char* szMask );

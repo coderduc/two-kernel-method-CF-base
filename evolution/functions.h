@@ -66,7 +66,7 @@ inline void NormalMouse() {
 }
 
 inline void InitMoveMouse() {
-	cout << OBF("[>] Loading...") << endl;
+	cout << xorstr_("[>] Loading...") << endl;
 
 	context = interception_create_context();
 	interception_set_filter(context, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_MOVE);
@@ -80,8 +80,8 @@ inline void InitMoveMouse() {
 			break;
 		}
 	}
-	system(OBF("cls"));
-	cout << OBF("[+] Loaded !") << endl;
+	system(xorstr_("cls"));
+	cout << xorstr_("[+] Loaded !") << endl;
 	thread normal(NormalMouse);
 	normal.detach();
 }
@@ -212,9 +212,9 @@ inline DWORD WINAPI nrc(LPVOID) {
 					float spread[4]{ 0,0,0,0 };
 					float _no_spread2[5] = { 9999999, 9999999, 9999999, 9999999, 9999999 };
 
-					writeBytes(playerBase + dwNoRecoilOffset, &spread, sizeof(spread));
-					writeBytes(playerBase + dwNoRecoilOffset - 0x44, &recoil, sizeof(recoil));
-					writeBytes(playerBase + dwNoRecoilOffset + 0x134, &_no_spread2, sizeof(_no_spread2));
+					kinterface->WritePhysMemory(kinterface->_processid, playerBase + dwNoRecoilOffset, &spread, sizeof(spread));
+					kinterface->WritePhysMemory(kinterface->_processid, playerBase + dwNoRecoilOffset - 0x44, &recoil, sizeof(recoil));
+					kinterface->WritePhysMemory(kinterface->_processid, playerBase + dwNoRecoilOffset + 0x134, &_no_spread2, sizeof(_no_spread2));
 				}
 				else
 				{
@@ -250,8 +250,8 @@ public:
 	{
 		T buffer{};
 
-		readvm(processid, (uint64_t)((uintptr_t)this + address), &buffer, sizeof(T));
-		
+		kinterface->ReadPhysMemory(kinterface->_processid, (uint64_t)((uintptr_t)this + address), &buffer, sizeof(T));
+
 		return buffer;
 	}
 };
@@ -636,7 +636,7 @@ inline void CalculateAngles(D3DXVECTOR3 enemy, float smooth)
 
 			//mouse_move(yaw, pitch);
 
-			write<D3DXVECTOR3>(playerBase + ViewAngle, D3DXVECTOR3(yaw, pitch, roll));
+			kinterface->WritePhysMemory(kinterface->_processid, playerBase + ViewAngle, D3DXVECTOR3(yaw, pitch, roll), sizeof(D3DXVECTOR3));
 		}
 	}
 }

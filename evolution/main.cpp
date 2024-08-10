@@ -59,7 +59,7 @@ auto get_process_wnd(uint32_t pid) -> HWND
 }
 
 bool loadDriver() {
-	system(OBF("sc stop faceit >> NUL"));
+	system(xorstr_("sc stop faceit >> NUL"));
 	HANDLE iqvw64e_device_handle = intel_driver::Load();
 	if (!iqvw64e_device_handle || iqvw64e_device_handle == INVALID_HANDLE_VALUE)
 	{
@@ -80,7 +80,7 @@ class SelfDelete
 public:
 	std::string RandString(int len)
 	{
-		const std::string chars = OBF("ABCDEFGHIJKLMNOPQRSTUVXYZ0123456789");
+		const std::string chars = xorstr_("ABCDEFGHIJKLMNOPQRSTUVXYZ0123456789");
 
 		std::random_device rd;
 		std::mt19937 generator(rd());
@@ -100,7 +100,7 @@ public:
 		FILE_RENAME_INFO fRename;
 		RtlSecureZeroMemory(&fRename, sizeof(fRename));
 
-		LPCWSTR lpwStream = OBF(L":sqnc");
+		LPCWSTR lpwStream = xorstr_(L":sqnc");
 		fRename.FileNameLength = sizeof(lpwStream);
 		RtlCopyMemory(fRename.FileName, lpwStream, sizeof(lpwStream));
 
@@ -121,7 +121,7 @@ public:
 		RtlSecureZeroMemory(wcPath, sizeof(wcPath));
 		GetModuleFileNameW(NULL, wcPath, MAX_PATH);
 
-		auto StringLmfao = (RandString(14) + OBF(".exe"));
+		auto StringLmfao = (RandString(14) + xorstr_(".exe"));
 		std::wstring wideString(StringLmfao.begin(), StringLmfao.end());
 
 		WCHAR wcNewPath[MAX_PATH + 1];
@@ -156,35 +156,41 @@ int main()
 	//Wait for game
 	while (Entryhwnd == NULL)
 	{
-		printf(OBF("> Waiting for crossfire...\r"));
-		processid = GetProcessID(OBF("crossfire.dat"));
-		Entryhwnd = get_process_wnd(processid);
+		printf(xorstr_("> Waiting for crossfire...\r"));
+		kinterface->_processid = GetProcessID(xorstr_("crossfire.dat"));
+		Entryhwnd = get_process_wnd(kinterface->_processid);
 		Sleep(1);
 	}
 
 	//Load Driver
-	system(OBF("sc stop faceit >> NUL"));
+	system(xorstr_("sc stop faceit >> NUL"));
 
 	//Init Driver
-	initdriver(processid);
+	Sleep(1000);
+	if (kinterface->Initialize() == false)
+		ExitProcess(5);
 	
-	while ((uintptr_t)client_address(OBF("ClientFx_x64.fxd"), true) != 274432) {
-		Sleep(1000);
+	//how about LPCWSTR 
+	auto x = kinterface->GetModuleBase(kinterface->_processid, xorstr_(L"ClientFx_x64.fxd"));
+	while (read<BYTE>(x) != 0x4D && x == 0)
+	{
+		x = kinterface->GetModuleBase(kinterface->_processid, xorstr_(L"ClientFx_x64.fxd"));
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 
-	system(OBF("cls"));
+	system(xorstr_("cls"));
 
-	Beep(1, 1);
+	Beep(300, 300);
 	FreeConsole();
 
 	//Main Process
-	CShell_x64 = client_address(OBF("CShell_x64.dll"), false);
-	LTClientShell = read<uintptr_t>(CShell_x64 + dwLTShell);
+	kinterface->ModuleBase = kinterface->GetModuleBase(kinterface->_processid, xorstr_(L"CShell_x64.dll"));
+	LTClientShell = read<uintptr_t>(kinterface->ModuleBase + dwLTShell);
 
 	using framerate = std::chrono::duration<int, std::ratio<1, 400>>;
 	auto tp = std::chrono::system_clock::now() + framerate{ 1 };
 	while (1) {
-		CF = FindWindowA(0, OBF("CROSSFIRE"));
+		CF = FindWindowA(0, xorstr_("CROSSFIRE"));
 		if (CF) {
 			Aimbot_Initialize();
 		}

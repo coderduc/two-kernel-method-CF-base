@@ -1,13 +1,13 @@
 #include "includes.h"
 
-#define NT_QWORD_SIG _X("\x48\x8B\x05\x00\x00\x00\x00\x48\x85\xC0\x74\x10\x44\x8B\x54\x24\x00\x44\x89\x54\x24\x00\xFF\x15\x00\x00\x00\x00\x48\x83\xC4\x38\xC3\xCC\xCC\xCC\xCC\xCC\xCC\xCC\x48\x83\xEC\x38\x48\x8B\x05\x00\x00\x00\x00\x48\x85\xC0\x74\x10")
-#define NT_QWORD_MASK _X("xxx????xxxxxxxxx?xxxx?xx????xxxxxxxxxxxxxxxxxxx????xxxxx")
+#define NT_QWORD_SIG _X("\x48\x8B\x00\x00\x00\x00\x00\x48\x85\xC0\x74\x00\x44\x8B\x54\x24\x60\x44\x89\x54\x24\x20\xFF\x15\x08\xAF\x06\x00")
+#define NT_QWORD_MASK _X("xx?????xxxx?xxxxxxxxxxxxxxxx")
 
-__int64 __fastcall hkNtUserSetGestureConfig(void* a1)
+__int64 __fastcall hkNtGdiEngPaint(void* a1)
 {
 	request_data data { 0 };
 	if ( ExGetPreviousMode( ) != UserMode || !pUtils.KernelCopy( &data, a1, sizeof( request_data ) ) || data.unique != request_unique ) {
-		return pUtils.orig_NtUserSetGestureConfig( a1 );
+		return pUtils.orig_NtGdiEngPaint( a1 );
 	}
 
 	const auto request = reinterpret_cast< request_data* >( a1 );
@@ -207,25 +207,13 @@ NTSTATUS DriverEntry( ) {
 		printf("[+] *nt_qword @ 0x%p", nt_qword_deref);
 
 		KeAttachProcess(process_target);
-		*(void**)&pUtils.orig_NtUserSetGestureConfig = _InterlockedExchangePointer((void**)nt_qword_deref, (void*)hkNtUserSetGestureConfig);
+		*(void**)&pUtils.orig_NtGdiEngPaint = _InterlockedExchangePointer((void**)nt_qword_deref, (void*)hkNtGdiEngPaint);
 		KeDetachProcess();
 	}
 	else {
 		printf("[-] Can't find explorer.exe");
 		return STATUS_UNSUCCESSFUL;
 	}
-
-	/*uint64_t NtCompositionSetDropTarget = ( uint64_t ) RtlFindExportedRoutineByName( ( PVOID ) win32kb, _X( "NtCompositionSetDropTarget" ) );
-	if ( !NtCompositionSetDropTarget)
-		status = STATUS_UNSUCCESSFUL;
-
-	uint64_t NtCompositionSetDropTargetPtr = NtCompositionSetDropTarget + 0xf;
-
-	const uintptr_t derefrenced_qword = ( uintptr_t )NtCompositionSetDropTargetPtr + *( int* ) ( ( BYTE* )NtCompositionSetDropTargetPtr + 3 ) + 7;
-	if ( !derefrenced_qword )
-		status = STATUS_UNSUCCESSFUL;
-
-	*( void** ) &pUtils.orig_NtCompositionSetDropTarget = _InterlockedExchangePointer( ( void** ) derefrenced_qword, ( void* ) hk_NtCompositionSetDropTarget);*/
 	printf("[+] Driver loaded");
 	return STATUS_SUCCESS;
 }

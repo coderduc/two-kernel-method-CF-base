@@ -3,11 +3,11 @@
 #define NT_QWORD_SIG _X("\x48\x8B\x00\x00\x00\x00\x00\x48\x85\xC0\x74\x00\x44\x8B\x54\x24\x60\x44\x89\x54\x24\x20\xFF\x15\x08\xAF\x06\x00")
 #define NT_QWORD_MASK _X("xx?????xxxx?xxxxxxxxxxxxxxxx")
 
-__int64 __fastcall hkNtGdiEngPaint(void* a1)
+__int64 __fastcall hkDrvDxgkPollDisplayChildren(void* a1)
 {
 	request_data data { 0 };
 	if ( ExGetPreviousMode( ) != UserMode || !pUtils.KernelCopy( &data, a1, sizeof( request_data ) ) || data.unique != request_unique ) {
-		return pUtils.orig_NtGdiEngPaint( a1 );
+		return pUtils.orig_DrvDxgkPollDisplayChildren( a1 );
 	}
 
 	const auto request = reinterpret_cast< request_data* >( a1 );
@@ -174,7 +174,10 @@ __int64 __fastcall hkNtGdiEngPaint(void* a1)
 	return 0;
 }
 
-NTSTATUS DriverEntry( ) {
+NTSTATUS DriverEntry(PDRIVER_OBJECT driver, PUNICODE_STRING regPath) {
+
+	UNREFERENCED_PARAMETER(driver);
+	UNREFERENCED_PARAMETER(regPath);
 
 	NtGdiSelectBrush = (GdiSelectBrush_t)pUtils.get_sys_module_export(_X(L"win32kfull.sys"), _X("NtGdiSelectBrush"));
 	//dbg("[+] SysCall: NtGdiSelectBrush module_export: 0x%p \n", NtGdiSelectBrush);
@@ -189,7 +192,7 @@ NTSTATUS DriverEntry( ) {
 	NtGdiPatBlt = (PatBlt_t)pUtils.get_sys_module_export(_X(L"win32kfull.sys"), _X("NtGdiPatBlt"));
 	//dbg("[+] SysCall: NtGdiPatBlt module_export: 0x%p \n", NtGdiPatBlt);
 
-	uintptr_t win32kb = pUtils.GetKernelModule( _X( "win32k.sys" ) );
+	/*uintptr_t win32kb = pUtils.GetKernelModule( _X( "win32k.sys" ) );
 	uintptr_t nt_qword{};
 
 	if (win32kb) {
@@ -213,7 +216,25 @@ NTSTATUS DriverEntry( ) {
 	else {
 		printf("[-] Can't find explorer.exe");
 		return STATUS_UNSUCCESSFUL;
-	}
-	printf("[+] Driver loaded");
-	return STATUS_SUCCESS;
+	}*/
+
+	NTSTATUS status = STATUS_SUCCESS;
+	uintptr_t win32kb = pUtils.GetKernelModule(_X("win32kbase.sys"));
+	if (!win32kb)
+		status = STATUS_UNSUCCESSFUL;
+
+	uint64_t DrvDxgkPollDisplayChildren = (uint64_t)RtlFindExportedRoutineByName((PVOID)win32kb, _X("DrvDxgkPollDisplayChildren"));
+	if (!DrvDxgkPollDisplayChildren)
+		status = STATUS_UNSUCCESSFUL;
+
+	
+	uint64_t DrvDxgkPollDisplayChildrenPtr = DrvDxgkPollDisplayChildren + 0x4;
+
+	const uintptr_t derefrenced_qword = (uintptr_t)DrvDxgkPollDisplayChildrenPtr + *(int*)((BYTE*)DrvDxgkPollDisplayChildrenPtr + 3) + 7;
+	if (!derefrenced_qword)
+		status = STATUS_UNSUCCESSFUL;
+
+	*(void**)&pUtils.orig_DrvDxgkPollDisplayChildren = _InterlockedExchangePointer((void**)derefrenced_qword, (void*)hkDrvDxgkPollDisplayChildren);
+	//printf("[+] Driver loaded");
+	return status;
 }

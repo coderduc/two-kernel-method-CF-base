@@ -195,13 +195,13 @@ inline DWORD WINAPI tr(LPVOID) {
 	}
 }
 
-inline DWORD WINAPI nrc(LPVOID) {
-	using framerate = std::chrono::duration<int, std::ratio<1, 400>>;
-	auto tp = std::chrono::system_clock::now() + framerate{ 1 };
+inline void nrc() {
+	//using framerate = std::chrono::duration<int, std::ratio<1, 400>>;
+	//auto tp = std::chrono::system_clock::now() + framerate{ 1 };
 
-	while (true)
-	{
-		if (isNoRecoil) {
+	//while (true)
+	//{
+		//if (isNoRecoil) {
 			LTClientShell = read<uintptr_t>(CShell_x64 + dwLTShell);
 			if (LTClientShell)
 			{
@@ -225,11 +225,11 @@ inline DWORD WINAPI nrc(LPVOID) {
 			{
 				std::this_thread::sleep_for(std::chrono::seconds(2));
 			}
-		}
-		std::this_thread::sleep_until(tp);
-		tp += framerate{ 1 };
-	}
-	return 0;
+		//}
+		//std::this_thread::sleep_until(tp);
+		//tp += framerate{ 1 };
+	//}
+	//return 0;
 }
 
 inline bool World2Screen(D3DXVECTOR3* InOut);
